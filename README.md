@@ -51,5 +51,7 @@ For more info see the AI Search Custom Web Skill [documentation](https://learn.m
 
 ## ToDos
 
+- [x] Implement Function
+- [ ] Test Skill (the schema might be off)
 - [ ] use managed identity to call the function and remove the key
 - [ ] Create Deployment Script for Azure Function
