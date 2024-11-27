@@ -24,7 +24,7 @@ This repository contains an example AI Search Custom Web Skill that calls AI Vis
 {
   "@odata.type": "#Microsoft.Skills.Custom.WebApiSkill",
   "description": "A custom skill that can identify positions of different phrases in the source text",
-  "uri": "https://contoso.count-things.com", # The Azure Function you deployed
+  "uri": "https://<your-function-name-and-region>.azurewebsites.net/api/aivisionapiv4?code=<YourFunctionKey>", # The Azure Function you deployed.
 //   "authResourceId": "<Azure-AD-registered-application-ID>", # authResourceId tells the search service to connect using a managed identity, passing the application ID of the target function or app in the property.
   "httpMethod": "POST",
   "batchSize": 4,
@@ -38,8 +38,8 @@ This repository contains an example AI Search Custom Web Skill that calls AI Vis
   ],
   "outputs": [
     {
-        "name": "tags",
-        "targetName": "tags"
+        "name": "image_text",
+        "targetName": "image_text" # The index field that you want to populate.
     }
   ]
 }
