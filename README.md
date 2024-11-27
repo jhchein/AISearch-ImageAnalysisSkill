@@ -7,11 +7,11 @@ This repository contains an example AI Search Custom Web Skill that calls AI Vis
 - Create a consumption Azure Function App.
 
 - Create an Azure AI Services Multi-Account if you don't have one already.
-  - Ensure it's in a region that supports AI Vision Image Analysis API v4.0 and it's features. See [regional availability](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/overview-image-analysis?tabs=4-0#region-availability)
+  - Ensure it's in a region that supports AI Vision Image Analysis API v4.0 and its features. See [regional availability](https://learn.microsoft.com/azure/ai-services/computer-vision/overview-image-analysis?tabs=4-0#region-availability).
 
 - Deploy this function app code to the Function App.
 
-- Set the environment variable `AI_VISION_ENDPOINT` to your AI Services Multi-Account URL.
+- Set the environment variables in your `.env` file based on the provided `.env.sample` file. Ensure that `AI_VISION_ENDPOINT` is set as an Azure Function environment variable.
 
 - Add a new skill to your Azure AI Search Skillset, as defined below.
   - Update the `uri` with your function's URL (e.g., `https://<yourfunctionnameandregion>.azurewebsites.net/api/aivisionapiv4?code=<YourFunctionKey>`).
@@ -52,6 +52,6 @@ For more info see the AI Search Custom Web Skill [documentation](https://learn.m
 ## ToDos
 
 - [x] Implement Function
-- [ ] Test Skill (the schema might be off)
-- [ ] use managed identity to call the function and remove the key
-- [ ] Create Deployment Script for Azure Function
+- [x] Test Skill (the schema might be off)
+- [x] Create Scripts for AI Search Datasource, Index, Skillset, and Indexer Setup.
+- [ ] use managed identity to call the function (to remove the key from the skillset)
