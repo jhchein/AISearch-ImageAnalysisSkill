@@ -10,7 +10,7 @@ from config import (
     RESOURCE_GROUP_NAME,
     STORAGE_ACCOUNT_NAME,
     FUNCTION_ENDPOINT,
-    FUNCTION_KEY,
+    APP_ID,
 )
 
 # Names
@@ -129,7 +129,8 @@ skillset_definition = {
         {
             "@odata.type": "#Microsoft.Skills.Custom.WebApiSkill",
             "description": "A custom skill that can identify positions of different phrases in the source text",
-            "uri": f"{FUNCTION_ENDPOINT}/api/aivisionapiv4?code={FUNCTION_KEY}",  # The Azure Function you deployed
+            "uri": f"{FUNCTION_ENDPOINT}/api/aivisionapiv4",  # Removed the function key
+            "authResourceId": f"api://{APP_ID}",  #  This property takes an application (client) ID or app's registration in Microsoft Entra ID, in any of these formats: api://<appId>, <appId>/.default, api://<appId>/.default
             "httpMethod": "POST",
             "batchSize": 4,
             "degreeOfParallelism": 5,  # (Optional) When specified, indicates the number of calls the indexer makes in parallel to the endpoint you provide. You can decrease this value if your endpoint is failing under pressure, or raise it if your endpoint can handle the load. If not set, a default value of 5 is used. The degreeOfParallelism can be set to a maximum of 10 and a minimum of 1.
