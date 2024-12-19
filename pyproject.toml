@@ -1,0 +1,7 @@
+[project]
+name = "customwebskill"
+version = "0.1.0"
+description = "This repository contains an example AI Search Custom Web Skill that calls AI Vision Image Analysis v4.0 (for OCR). This README contains the Skill Definition, the rest of the files are code for the Azure Function Web API."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
