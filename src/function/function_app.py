@@ -6,20 +6,17 @@ import base64
 import azure.functions as func
 from azure.ai.vision.imageanalysis import ImageAnalysisClient
 from azure.ai.vision.imageanalysis.models import VisualFeatures
-from azure.core.credentials import AzureKeyCredential
 from azure.core.exceptions import AzureError
-from azure.identity import DefaultAzureCredential
+from azure.identity import ManagedIdentityCredential
 
 app = func.FunctionApp()
 
 AI_VISION_ENDPOINT = os.getenv("AI_VISION_ENDPOINT")
-AI_VISION_KEY = os.getenv("AI_VISION_KEY")
 
 # Initialize credentials
-credential = (
-    AzureKeyCredential(AI_VISION_KEY) if AI_VISION_KEY else DefaultAzureCredential()
-)
-auth_method = "API key" if AI_VISION_KEY else "Managed Identity"
+credential = ManagedIdentityCredential()
+
+auth_method = "Managed Identity"
 logging.info(f"Using {auth_method} for authentication.")
 
 # Initialize the AI Vision client
@@ -35,16 +32,19 @@ def aivisionapiv4(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         req_body = req.get_json()
-    except ValueError:
-        logging.error("Invalid JSON in request.")
+    except ValueError as ve:
+        logging.error("Invalid JSON in request.", exc_info=True)
         return func.HttpResponse(
             json.dumps({"error": "Invalid JSON in request."}),
             status_code=400,
             mimetype="application/json",
         )
 
+    use_caption = req.params.get("use_caption", "false").lower() == "true"
+
     response = {"values": []}
     document_caption = ""  # Initialize document-level caption
+    document_content = ""  # Initialize document_content
 
     for record in req_body.get("values", []):
         record_id = record.get("recordId")
@@ -65,9 +65,13 @@ def aivisionapiv4(req: func.HttpRequest) -> func.HttpResponse:
         try:
             image_bytes = base64.b64decode(image_base64)
 
+            visual_features = [VisualFeatures.READ]
+            if use_caption:
+                visual_features.append(VisualFeatures.CAPTION)
+
             result = ai_vision_client.analyze(
                 image_data=image_bytes,
-                visual_features=[VisualFeatures.READ, VisualFeatures.CAPTION],
+                visual_features=visual_features,
                 language="en",
             )
 
@@ -80,25 +84,30 @@ def aivisionapiv4(req: func.HttpRequest) -> func.HttpResponse:
                 logging.warning(f"No read results for record ID: {record_id}.")
                 document_content = ""
 
-            if result.caption:
+            if use_caption and result.caption:
                 caption = result.caption.text
                 logging.info(f"Caption: {caption}")
                 # Assign caption to document-level variable
                 document_caption = caption
             else:
-                logging.warning(f"No caption results for record ID: {record_id}.")
+                if use_caption:
+                    logging.warning(f"No caption results for record ID: {record_id}.")
                 caption = ""
+
+            data = {"image_text": document_content}
+            if use_caption:
+                data["caption"] = caption
 
             response["values"].append(
                 {
                     "recordId": record_id,
-                    "data": {"image_text": document_content, "caption": caption},
+                    "data": data,
                 }
             )
 
         except AzureError as e:
             error_msg = f"Azure Error processing record ID {record_id}: {e}"
-            logging.error(error_msg)
+            logging.error(error_msg, exc_info=True)
             response["values"].append(
                 {
                     "recordId": record_id,
@@ -108,7 +117,7 @@ def aivisionapiv4(req: func.HttpRequest) -> func.HttpResponse:
 
         except Exception as e:
             error_msg = f"Unexpected error processing record ID {record_id}: {e}"
-            logging.error(error_msg)
+            logging.error(error_msg, exc_info=True)
             response["values"].append(
                 {
                     "recordId": record_id,

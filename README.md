@@ -1,57 +1,123 @@
-# Azure AI Search - AI Vision Image Analysis v4.0 - Custom Web Skill
+# Azure Cognitive Search - AI Vision Image Analysis v4.0 - Custom Web Skill
 
-This repository contains an example AI Search Custom Web Skill that calls AI Vision Image Analysis v4.0 (for OCR). This README contains the Skill Definition, the rest of the files are code for the Azure Function Web API.
+This repository provides an example of a **Custom Web Skill** for Azure Cognitive Search that leverages **AI Vision Image Analysis v4.0** to perform Optical Character Recognition (OCR) on images. By integrating this custom skill into your search indexing pipeline, you can extract text and captions from images stored in Azure Blob Storage and make them searchable.
 
-## Setup
+## Overview
 
-- Create a consumption Azure Function App.
+The project demonstrates how to:
 
-- Create an Azure AI Services Multi-Account if you don't have one already.
-  - Ensure it's in a region that supports AI Vision Image Analysis API v4.0 and its features. See [regional availability](https://learn.microsoft.com/azure/ai-services/computer-vision/overview-image-analysis?tabs=4-0#region-availability).
+- **Implement an Azure Function App** that acts as a web API, calling AI Vision services to analyze images.
+- **Define a custom skill** in Azure Cognitive Search that invokes the Function App during indexing.
+- **Set up Azure Cognitive Search resources** including data source, index, skillset, and indexer.
 
-- Deploy this function app code to the Function App.
+## Key Components
 
-- Set the environment variables in your `.env` file based on the provided `.env.sample` file. Ensure that `AI_VISION_ENDPOINT` is set as an Azure Function environment variable.
+- **Azure Function App** (`src/function`):
+  - Handles HTTP requests from the search indexer.
+  - Uses Managed Identity to authenticate with AI Vision services.
+  - Processes images to extract text (`image_text`) and captions (`caption`).
 
-- Add a new skill to your Azure AI Search Skillset, as defined below.
-  - Update the `uri` with your function's URL (e.g., `https://<yourfunctionnameandregion>.azurewebsites.net/api/aivisionapiv4?code=<YourFunctionKey>`).
+- **Custom Web Skill Definition** (`definitions.py`):
+  - Configures the skillset to include the custom skill.
+  - Specifies inputs (image data) and outputs (extracted text and captions).
 
-- Assign the `Cognitive Services Contributor` role to the Function App to allow it to call the AI Services Multi-Account.
+- **Azure Cognitive Search Scripts** (`src/aisearch`):
+  - `setup.py`: Creates or updates the data source, index, skillset, and indexer.
+  - `helpers.py`: Provides utility functions to manage the indexer (run, check status, delete resources).
 
-### Example Skill:
+## Getting Started
 
-```JSON
+### Prerequisites
+
+- **Azure Subscription** with access to create resources.
+- **Azure Cognitive Search Service**.
+- **Azure AI Vision Service** (Multi-Account).
+- **Azure Storage Account** containing your images.
+- **Python 3.11+** installed locally.
+- Familiarity with Azure services and command-line tools.
+
+### Setup
+
+1. **Clone the Repository**
+
+   ```bash
+   git clone https://github.com/yourusername/customwebskill.git
+   cd customwebskill
+   ```
+
+2. **Configure Environment Variables**
+
+   - Copy `.env.sample` to `.env`.
+   - Update `.env` with your Azure resource details and credentials.
+
+3. **Deploy the Azure Function App**
+
+   - Navigate to `src/function`.
+   - Deploy the Function App to Azure (e.g., using Azure Functions Core Tools or VS Code).
+   - Ensure the Function App's Managed Identity has the `Cognitive Services User` role on your AI Vision resource.
+   - Update `FUNCTION_ENDPOINT` and `FUNCTION_KEY` in your `.env` file after deployment.
+
+4. **Set Up Azure Cognitive Search Resources**
+
+   - Navigate to `src/aisearch`.
+   - Install dependencies: `pip install -r requirements.txt`.
+   - Run `setup.py` to create or update the data source, index, skillset, and indexer.
+   - The `definitions.py` file contains configurations for these resources.
+
+### Skill Definition Example
+
+An example of the **Custom Web Skill** definition:
+
+```json
 {
   "@odata.type": "#Microsoft.Skills.Custom.WebApiSkill",
-  "description": "A custom skill that can identify positions of different phrases in the source text",
-  "uri": "https://<your-function-name-and-region>.azurewebsites.net/api/aivisionapiv4?code=<YourFunctionKey>", # The Azure Function you deployed.
-//   "authResourceId": "<Azure-AD-registered-application-ID>", # authResourceId tells the search service to connect using a managed identity, passing the application ID of the target function or app in the property.
+  "description": "Extracts text and captions from images using AI Vision Image Analysis v4.0",
+  "uri": "https://<your-function-app-name>.azurewebsites.net/api/aivisionapiv4?code=<FunctionKey>",
   "httpMethod": "POST",
   "batchSize": 4,
-  "degreeOfParallelism": 5, # (Optional) When specified, indicates the number of calls the indexer makes in parallel to the endpoint you provide. You can decrease this value if your endpoint is failing under pressure, or raise it if your endpoint can handle the load. If not set, a default value of 5 is used. The degreeOfParallelism can be set to a maximum of 10 and a minimum of 1.
-  "context": "/document",
+  "context": "/document/normalized_images/*",
   "inputs": [
-   {
-        "name": "pages",
-        "source": "/document/normalized_images/*/data"
-    }
+    { "name": "image", "source": "/document/normalized_images/*/data" }
   ],
   "outputs": [
-    {
-        "name": "image_text",
-        "targetName": "image_text" # The index field that you want to populate.
-    }
+    { "name": "image_text", "targetName": "image_text" },
+    { "name": "caption", "targetName": "caption" }
   ]
 }
 ```
 
-The system-managed identity is used automatically if "apikey" and "authIdentity" are empty, as demonstrated in the following example. The "authIdentity" property is used for user-assigned managed identity only.
+Replace `<your-function-app-name>` and `<FunctionKey>` with your Function App's details.
 
-For more info see the AI Search Custom Web Skill [documentation](https://learn.microsoft.com/en-us/azure/search/cognitive-search-custom-skill-web-api)
+## Notes
 
-## ToDos
+- **Authentication:**
+  - The Function App uses its **system-assigned Managed Identity** to authenticate with AI Vision services.
+  - The search indexer currently authenticates to the Function App via the function key. Implementing Managed Identity for this interaction is a future enhancement.
 
-- [x] Implement Function
-- [x] Test Skill (the schema might be off)
-- [x] Create Scripts for AI Search Datasource, Index, Skillset, and Indexer Setup.
-- [ ] use managed identity to call the function (to remove the key from the skillset)
+- **Environment Variables:**
+  - Ensure all required variables are set in your `.env` file and Azure Function App settings.
+
+- **Data Source:**
+  - The data source should point to your Azure Blob Storage container containing the images to be indexed.
+
+## Additional Information
+
+- **Testing the Function App:**
+  - A test script is available in `src/test/function/call_function.py` to validate the Function App independently.
+
+- **Managing the Indexer:**
+  - Use `helpers.py` to run or check the status of the indexer, and to delete resources if needed.
+
+## To-Do Items
+
+- [x] Implement Function App using Managed Identity to call AI Vision.
+- [x] Create scripts for Azure Cognitive Search resource setup.
+- [x] Test and adjust the skillset and index schema.
+- [x] Remove API keys from the Function App environment variables.
+- [ ] **Enhancement:** Enable Managed Identity for Azure Cognitive Search to call the Function App (remove function key from the skill definition).
+
+## Contributing
+
+Contributions are welcome. Feel free to open issues or submit pull requests to enhance the functionality or fix any problems.
+
+````
