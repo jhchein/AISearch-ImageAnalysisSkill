@@ -41,7 +41,7 @@ The project demonstrates how to:
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/yourusername/customwebskill.git
+   git clone https://github.com/jhchein/customwebskill.git
    cd customwebskill
    ```
 
