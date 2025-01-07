@@ -2,7 +2,7 @@ import base64
 import requests
 import os
 import logging
-from azure.identity import DefaultAzureCredential
+from azure.identity import InteractiveBrowserCredential
 from dotenv import load_dotenv
 
 # Configure logging
@@ -20,7 +20,8 @@ FUNCTION_KEY = os.getenv("FUNCTION_KEY")
 
 if FUNCTION_KEY is None:
     logger.info("No function key provided. Using managed identity.")
-    credential = DefaultAzureCredential()
+    credential = InteractiveBrowserCredential(tenant_id=AZURE_TENANT_ID)
+    headers = {}
     try:
         token = credential.get_token("api://{FUNCTION_APP_CLIENT_ID}/.default").token
         headers["Authorization"] = f"Bearer {token}"
@@ -29,7 +30,7 @@ if FUNCTION_KEY is None:
         logger.error(f"Error obtaining access token: {e}")
         raise
 else:
-    logger.info("Function key provided. Using API key.")
+    logger.info("Function key provided. Using function key.")
 
 uri = f"{FUNCTION_ENDPOINT}/api/aivisionapiv4"
 
@@ -69,4 +70,25 @@ try:
     logger.info(f"Response: {response.json()}")
 except requests.exceptions.RequestException as e:
     logger.error(f"Error sending request: {e}")
-    raise
+
+    if response.status_code == 401:
+        logger.error("Unauthorized. Switching to managed identity.")
+        credential = InteractiveBrowserCredential(tenant_id=AZURE_TENANT_ID)
+        try:
+            token = credential.get_token(f"api://{FUNCTION_APP_CLIENT_ID}/get").token
+            headers["Authorization"] = f"Bearer {token}"
+            logger.info("Access token obtained and added to headers.")
+        except Exception as e:
+            logger.error(f"Error obtaining access token: {e}")
+            raise
+
+        try:
+            response = requests.post(uri, json=data, headers=headers, params=params)
+            response.raise_for_status()
+            logger.info("Request sent successfully.")
+            logger.info(f"Response: {response.json()}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error sending request: {e}")
+            raise
+    else:
+        raise
