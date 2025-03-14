@@ -1,15 +1,16 @@
 import base64
-import requests
-import os
 import logging
-from azure.identity import InteractiveBrowserCredential
-from dotenv import load_dotenv
+import os
+
+import requests
+from azure.identity import DefaultAzureCredential
+from dotenv import find_dotenv, load_dotenv
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+load_dotenv(find_dotenv())
 
 AZURE_CLIENT_ID = os.getenv("AZURE_CLIENT_ID")
 AZURE_CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET")
@@ -20,10 +21,10 @@ FUNCTION_KEY = os.getenv("FUNCTION_KEY")
 
 if FUNCTION_KEY is None:
     logger.info("No function key provided. Using managed identity.")
-    credential = InteractiveBrowserCredential(tenant_id=AZURE_TENANT_ID)
+    credential = DefaultAzureCredential()
     headers = {}
     try:
-        token = credential.get_token("api://{FUNCTION_APP_CLIENT_ID}/.default").token
+        token = credential.get_token(f"api://{FUNCTION_APP_CLIENT_ID}/.default").token
         headers["Authorization"] = f"Bearer {token}"
         logger.info("Access token obtained and added to headers.")
     except Exception as e:
@@ -70,25 +71,26 @@ try:
     logger.info(f"Response: {response.json()}")
 except requests.exceptions.RequestException as e:
     logger.error(f"Error sending request: {e}")
+    raise
 
-    if response.status_code == 401:
-        logger.error("Unauthorized. Switching to managed identity.")
-        credential = InteractiveBrowserCredential(tenant_id=AZURE_TENANT_ID)
-        try:
-            token = credential.get_token(f"api://{FUNCTION_APP_CLIENT_ID}/get").token
-            headers["Authorization"] = f"Bearer {token}"
-            logger.info("Access token obtained and added to headers.")
-        except Exception as e:
-            logger.error(f"Error obtaining access token: {e}")
-            raise
+if response.status_code == 401:
+    logger.error("Unauthorized. Switching to managed identity.")
+    credential = DefaultAzureCredential()
 
-        try:
-            response = requests.post(uri, json=data, headers=headers, params=params)
-            response.raise_for_status()
-            logger.info("Request sent successfully.")
-            logger.info(f"Response: {response.json()}")
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error sending request: {e}")
-            raise
-    else:
+    headers = {}
+    try:
+        token = credential.get_token(f"api://{FUNCTION_APP_CLIENT_ID}/.default").token
+        headers["Authorization"] = f"Bearer {token}"
+        logger.info("Access token obtained and added to headers.")
+    except Exception as e:
+        logger.error(f"Error obtaining access token: {e}")
+        raise
+
+    try:
+        response = requests.post(uri, json=data, headers=headers, params=params)
+        response.raise_for_status()
+        logger.info("Request sent successfully.")
+        logger.info(f"Response: {response.json()}")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error sending request: {e}")
         raise

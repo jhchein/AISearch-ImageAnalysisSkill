@@ -1,16 +1,18 @@
 import uuid
+
 from config import (
-    USECASE_NAME,
-    STORAGE_ACCOUNT_CONTAINER,
-    AZURE_OPENAI_ENDPOINT,
-    AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME,
-    AZURE_OPENAI_API_KEY,
     AI_MULTIACCOUT_KEY,
-    SUBSCRIPTION_ID,
-    RESOURCE_GROUP_NAME,
-    STORAGE_ACCOUNT_NAME,
+    AZURE_OPENAI_API_KEY,
+    AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME,
+    AZURE_OPENAI_ENDPOINT,
+    FUNCTION_APP_CLIENT_ID,
     FUNCTION_ENDPOINT,
-    APP_ID,
+    FUNCTION_KEY,
+    RESOURCE_GROUP_NAME,
+    STORAGE_ACCOUNT_CONTAINER,
+    STORAGE_ACCOUNT_NAME,
+    SUBSCRIPTION_ID,
+    USECASE_NAME,
 )
 
 # Names
@@ -129,8 +131,8 @@ skillset_definition = {
         {
             "@odata.type": "#Microsoft.Skills.Custom.WebApiSkill",
             "description": "A custom skill that can identify positions of different phrases in the source text",
-            "uri": f"{FUNCTION_ENDPOINT}/api/aivisionapiv4",  # Removed the function key
-            "authResourceId": f"api://{APP_ID}",  #  This property takes an application (client) ID or app's registration in Microsoft Entra ID, in any of these formats: api://<appId>, <appId>/.default, api://<appId>/.default
+            "uri": f"{FUNCTION_ENDPOINT}/api/aivisionapiv4?code={FUNCTION_KEY}",
+            "authResourceId": f"api://{FUNCTION_APP_CLIENT_ID}/.default",  #  This property takes an application (client) ID or app's registration in Microsoft Entra ID, in any of these formats: api://<appId>, <appId>/.default, api://<appId>/.default
             "httpMethod": "POST",
             "batchSize": 4,
             "degreeOfParallelism": 5,  # (Optional) When specified, indicates the number of calls the indexer makes in parallel to the endpoint you provide. You can decrease this value if your endpoint is failing under pressure, or raise it if your endpoint can handle the load. If not set, a default value of 5 is used. The degreeOfParallelism can be set to a maximum of 10 and a minimum of 1.

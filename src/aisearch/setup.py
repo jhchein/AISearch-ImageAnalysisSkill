@@ -1,4 +1,10 @@
 from azure_search_client import create_resource
+from config import (
+    AI_SEARCH_ADMIN_KEY,
+    AI_SEARCH_ENDPOINT,
+    AI_SEARCH_SEARCH_API_VERSION,
+    AI_SEARCH_SKILLSET_API_VERSION,
+)
 from definitions import (
     data_source_name,
     datasource_definition,
@@ -10,12 +16,9 @@ from definitions import (
     skillset_name,
     x_ms_client_request_id,
 )
+from dotenv import load_dotenv, find_dotenv
 
-from config import (
-    AI_SEARCH_ENDPOINT,
-    AI_SEARCH_SEARCH_API_VERSION,
-    AI_SEARCH_ADMIN_KEY,
-)
+load_dotenv(find_dotenv())
 
 headers = {
     "x-ms-client-request-id": x_ms_client_request_id,
@@ -27,7 +30,7 @@ def main():
     resource_urls = {
         "datasource": f"{AI_SEARCH_ENDPOINT}/datasources/{data_source_name}?api-version={AI_SEARCH_SEARCH_API_VERSION}",
         "index": f"{AI_SEARCH_ENDPOINT}/indexes/{index_name}?api-version={AI_SEARCH_SEARCH_API_VERSION}",
-        "skillset": f"{AI_SEARCH_ENDPOINT}/skillsets/{skillset_name}?api-version=2024-11-01-preview",
+        "skillset": f"{AI_SEARCH_ENDPOINT}/skillsets/{skillset_name}?api-version={AI_SEARCH_SKILLSET_API_VERSION}",
         "indexer": f"{AI_SEARCH_ENDPOINT}/indexers/{indexer_name}?api-version={AI_SEARCH_SEARCH_API_VERSION}",
     }
 

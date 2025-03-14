@@ -141,6 +141,23 @@ def delete_datasource():
     delete_resource(datasource_url, headers, "Data Source")
 
 
+def get_skillset():
+    headers = {
+        "x-ms-client-request-id": x_ms_client_request_id,
+        "api-key": AI_SEARCH_ADMIN_KEY,
+    }
+    skillset_url = f"{AI_SEARCH_ENDPOINT}/skillsets/{skillset_name}?api-version={AI_SEARCH_SEARCH_API_VERSION}"
+    response = requests.get(skillset_url, headers=headers)
+    if response.status_code == 200:
+        skillset = response.json()
+        logging.info(f"Skillset: {json.dumps(skillset, indent=2)}")
+        return skillset
+    else:
+        logging.error(f"Failed to get skillset. Status code: {response.status_code}")
+        logging.error(f"Response: {response.text}")
+        response.raise_for_status()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Manage Azure Cognitive Search resources"
@@ -160,6 +177,7 @@ if __name__ == "__main__":
         "--delete-datasource", action="store_true", help="Delete the data source"
     )
     parser.add_argument("--wipe-all", action="store_true", help="Delete all resources")
+    parser.add_argument("--get-skillset", action="store_true", help="Get the skillset")
 
     args = parser.parse_args()
 
@@ -191,6 +209,8 @@ if __name__ == "__main__":
             delete_skillset()
             delete_datasource()
             delete_index()
+        if args.get_skillset:
+            get_skillset()
         if not any(vars(args).values()):
             print("No action specified. Use --help for available options.")
     except Exception as e:

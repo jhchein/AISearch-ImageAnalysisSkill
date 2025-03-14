@@ -4,4 +4,10 @@ version = "0.1.0"
 description = "This repository contains an example AI Search Custom Web Skill that calls AI Vision Image Analysis v4.0 (for OCR). This README contains the Skill Definition, the rest of the files are code for the Azure Function Web API."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "azure-ai-vision-imageanalysis>=1.0.0",
+    "azure-functions>=1.21.3",
+    "azure-identity>=1.19.0",
+    "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
+]

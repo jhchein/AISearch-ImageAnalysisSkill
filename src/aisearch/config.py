@@ -1,7 +1,7 @@
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
-load_dotenv("../../.env")
+load_dotenv(find_dotenv())
 
 # Azure credentials and settings
 SUBSCRIPTION_ID = os.getenv("SUBSCRIPTION_ID")
@@ -11,6 +11,7 @@ USECASE_NAME = os.getenv("USECASE_NAME")
 AI_SEARCH_ENDPOINT = os.getenv("AI_SEARCH_ENDPOINT")
 AI_SEARCH_ADMIN_KEY = os.getenv("AI_SEARCH_ADMIN_KEY")
 AI_SEARCH_SEARCH_API_VERSION = os.getenv("AI_SEARCH_API_VERSION")
+AI_SEARCH_SKILLSET_API_VERSION = os.getenv("AI_SEARCH_SKILLSET_API_VERSION")
 STORAGE_ACCOUNT_NAME = os.getenv("STORAGE_ACCOUNT_NAME")
 # storage_account_connection_string = os.getenv("STORAGE_ACCOUNT_CONNECTION_STRING")
 STORAGE_ACCOUNT_CONTAINER = os.getenv("STORAGE_ACCOUNT_CONTAINER")
@@ -25,4 +26,4 @@ AI_MULTIACCOUT_KEY = os.getenv("AI_MULTIACCOUT_KEY")
 FUNCTION_KEY = os.getenv("FUNCTION_KEY")
 FUNCTION_ENDPOINT = os.getenv("FUNCTION_ENDPOINT")
 
-APP_ID = os.getenv("APP_ID")
+FUNCTION_APP_CLIENT_ID = os.getenv("FUNCTION_APP_CLIENT_ID")
