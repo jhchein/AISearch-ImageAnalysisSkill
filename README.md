@@ -54,7 +54,7 @@ The project demonstrates how to:
 
    - Navigate to `src/function`.
    - Deploy the Function App to Azure (e.g., using Azure Functions Core Tools or VS Code).
-   - Ensure the Function App's Managed Identity has the `Cognitive Services User` role on your AI Vision resource.
+   - Ensure the Function App's Managed Identity has the `AI Developer` role on your AI Vision resource.
    - Update `FUNCTION_ENDPOINT` and `FUNCTION_KEY` in your `.env` file after deployment.
 
 4. **Set Up Azure AI Search Resources**
