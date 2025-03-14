@@ -50,13 +50,6 @@ cd customwebskill
 - Copy `.env.sample` to `.env`.
 - Update `.env` with your Azure resource details and credentials. See `.env.sample` for required variables.
 
-**Example `.env` Configuration:**
-```bash
-FUNCTION_ENDPOINT="https://<your-function-app-name>.azurewebsites.net"
-FUNCTION_KEY="<your-function-key>"
-FUNCTION_APP_CLIENT_ID="<your-function-app-client-id>"
-```
-
 3. **Deploy the Azure Function App**
 
 - Navigate to `src/function`.
@@ -83,8 +76,10 @@ Here's an example of the **Custom Web Skill** definition configured to use the F
   "@odata.type": "#Microsoft.Skills.Custom.WebApiSkill",
   "description": "Extracts text and captions from images using Azure AI Vision Image Analysis v4.0",
   "uri": "https://<your-function-app-name>.azurewebsites.net/api/aivisionapiv4?code=<your-function-key>",
+  "authResourceId": "api://<appId>/.default",
   "httpMethod": "POST",
   "batchSize": 4,
+  "degreeOfParallelism": 5,
   "context": "/document/normalized_images/*",
   "inputs": [
     { "name": "image", "source": "/document/normalized_images/*/data" }
@@ -117,7 +112,7 @@ Follow these steps to configure Azure AI Search to authenticate securely with yo
 - Enter the copied `Object (principal) ID` into the search field.
 - Click on the matching Azure AI Search Service application and copy the `Application ID`.
 
-### 3. Create an App Registration for the Azure Function App
+### 4. Create an App Registration for the Azure Function App
 
 - In `Microsoft Entra ID`, navigate to `App registrations`.
 - Click `+ New Registration`.
@@ -125,7 +120,7 @@ Follow these steps to configure Azure AI Search to authenticate securely with yo
 - After registration, select `Expose an API` and click `Add` next to "Application ID URI".
 - Copy the generated `Application ID URI`.
 
-### 3. Configure Authentication (Easy Auth) in the Azure Function App
+### 5. Configure Authentication (Easy Auth) in the Azure Function App
 
 - In the Azure Portal, navigate to your Azure Function App.
 - Under `Authentication`, add the Microsoft identity provider.
@@ -136,10 +131,9 @@ Follow these steps to configure Azure AI Search to authenticate securely with yo
 - Under `Unauthenticated requests`, select `HTTP 401 Unauthorized`.
 - Save your changes.
 
-### 3. Update Skillset Configuration for Managed Identity Authentication
+### 6. Update Skillset Configuration for Managed Identity Authentication
 
 - Add the Service Principal's `client ID` (from the App Registration) as `FUNCTION_APP_CLIENT_ID` in your `.env` file.
-- Update your skillset definition (`definitions.py`) to use Managed Identity authentication by setting the `authResourceId` property to the `Application ID URI` you copied earlier.
 
 ## Troubleshooting
 
@@ -150,7 +144,6 @@ Follow these steps to configure Azure AI Search to authenticate securely with yo
 
 - **Authentication:**
   - The Azure Function App uses its **system-assigned Managed Identity** to authenticate with Azure AI Vision services.
-  - Currently, the Azure AI Search indexer authenticates to the Function App via the Function Key. Implementing Managed Identity for this interaction is a planned future enhancement.
 
 - **Environment Variables:**
   - Ensure all required variables are set in your `.env` file and Azure Function App settings.

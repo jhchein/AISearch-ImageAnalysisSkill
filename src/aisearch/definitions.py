@@ -130,7 +130,7 @@ skillset_definition = {
     "skills": [
         {
             "@odata.type": "#Microsoft.Skills.Custom.WebApiSkill",
-            "description": "A custom skill that can identify positions of different phrases in the source text",
+            "description": "Extracts text and captions from images using Azure AI Vision Image Analysis v4.0",
             "uri": f"{FUNCTION_ENDPOINT}/api/aivisionapiv4?code={FUNCTION_KEY}",
             "authResourceId": f"api://{FUNCTION_APP_CLIENT_ID}/.default",  #  This property takes an application (client) ID or app's registration in Microsoft Entra ID, in any of these formats: api://<appId>, <appId>/.default, api://<appId>/.default
             "httpMethod": "POST",
