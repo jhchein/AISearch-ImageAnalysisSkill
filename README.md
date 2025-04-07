@@ -112,7 +112,7 @@ Follow these steps to configure Azure AI Search to authenticate securely with yo
 - Enter the copied `Object (principal) ID` into the search field.
 - Click on the matching Azure AI Search Service application and copy the `Application ID`.
 
-### 4. Create an App Registration for the Azure Function App
+### 3. Create an App Registration for the Azure Function App
 
 - In `Microsoft Entra ID`, navigate to `App registrations`.
 - Click `+ New Registration`.
@@ -120,7 +120,7 @@ Follow these steps to configure Azure AI Search to authenticate securely with yo
 - After registration, select `Expose an API` and click `Add` next to "Application ID URI".
 - Copy the generated `Application ID URI`.
 
-### 5. Configure Authentication (Easy Auth) in the Azure Function App
+### 4. Configure Authentication (Easy Auth) in the Azure Function App
 
 - In the Azure Portal, navigate to your Azure Function App.
 - Under `Authentication`, add the Microsoft identity provider.
@@ -131,7 +131,7 @@ Follow these steps to configure Azure AI Search to authenticate securely with yo
 - Under `Unauthenticated requests`, select `HTTP 401 Unauthorized`.
 - Save your changes.
 
-### 6. Update Skillset Configuration for Managed Identity Authentication
+### 5. Update Skillset Configuration for Managed Identity Authentication
 
 - Add the Service Principal's `client ID` (from the App Registration) as `FUNCTION_APP_CLIENT_ID` in your `.env` file.
 
