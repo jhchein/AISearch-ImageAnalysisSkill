@@ -111,7 +111,7 @@ index_definition = {
             "key": False,
         },
         {
-            "name": "caption",  # New field for image captions
+            "name": "caption",
             "type": "Edm.String",
             "searchable": True,
             "filterable": False,
@@ -119,6 +119,17 @@ index_definition = {
             "stored": True,
             "sortable": False,
             "facetable": False,
+            "key": False,
+        },
+        {
+            "name": "language_code",
+            "type": "Edm.String",
+            "searchable": False,
+            "filterable": True,
+            "retrievable": True,
+            "stored": True,
+            "sortable": True,  # Maybe sortable if useful
+            "facetable": True,  # Facetable makes sense for language
             "key": False,
         },
     ],
@@ -129,16 +140,40 @@ skillset_definition = {
     "description": "A skillset for structure-aware chunking and vectorization with a index projection around markdown section",
     "skills": [
         {
+            "@odata.type": "#Microsoft.Skills.Text.LanguageDetectionSkill",
+            "name": "language_detection_skill",
+            "description": "Detects the language of the document content",
+            "context": "/document",
+            "inputs": [
+                {
+                    "name": "text",
+                    "source": "/document/content",
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "languageCode",
+                    "targetName": "languageCode",
+                }
+            ],
+            "defaultLanguageCode": "en",
+        },
+        {
             "@odata.type": "#Microsoft.Skills.Custom.WebApiSkill",
+            "name": "image_analysis_skill",
             "description": "Extracts text and captions from images using Azure AI Vision Image Analysis v4.0",
-            "uri": f"{FUNCTION_ENDPOINT}/api/aivisionapiv4?code={FUNCTION_KEY}",
+            "uri": f"{FUNCTION_ENDPOINT}/api/aivisionapiv4?code={FUNCTION_KEY}&use_caption=true",
             "authResourceId": f"api://{FUNCTION_APP_CLIENT_ID}/.default",  #  This property takes an application (client) ID or app's registration in Microsoft Entra ID, in any of these formats: api://<appId>, <appId>/.default, api://<appId>/.default
             "httpMethod": "POST",
             "batchSize": 4,
             "degreeOfParallelism": 5,  # (Optional) When specified, indicates the number of calls the indexer makes in parallel to the endpoint you provide. You can decrease this value if your endpoint is failing under pressure, or raise it if your endpoint can handle the load. If not set, a default value of 5 is used. The degreeOfParallelism can be set to a maximum of 10 and a minimum of 1.
             "context": "/document/normalized_images/*",
             "inputs": [
-                {"name": "image", "source": "/document/normalized_images/*/data"}
+                {"name": "image", "source": "/document/normalized_images/*/data"},
+                {
+                    "name": "languageCode",
+                    "source": "/document/languageCode",
+                },
             ],
             "outputs": [
                 {"name": "image_text", "targetName": "image_text"},
@@ -147,6 +182,7 @@ skillset_definition = {
         },
         {
             "@odata.type": "#Microsoft.Skills.Text.MergeSkill",
+            "name": "merge_skill",
             "description": "Create mergedText with all textual representations.",
             "context": "/document",
             "insertPreTag": " ",
@@ -166,7 +202,7 @@ skillset_definition = {
         },
         {
             "@odata.type": "#Microsoft.Skills.Text.SplitSkill",
-            "name": "my_markdown_section_split_skill",
+            "name": "markdown_section_split_skill",
             "description": "A skill that splits text into chunks",
             "context": "/document",  # Updated context
             "inputs": [
@@ -218,9 +254,15 @@ skillset_definition = {
                     {"name": "chunk", "source": "/document/pages/*"},
                     {"name": "title", "source": "/document/title"},
                     {
+                        "name": "language_code",
+                        "source": "/document/languageCode",
+                    },
+                    {
                         "name": "caption",
                         "source": "/document/normalized_images/*/caption",
                     },
+                    # NOTE: This mapping might put the *same* caption on *every* chunk from a document.
+                    # Consider if this is desired or if caption should be stored differently.
                 ],
             }
         ],
@@ -244,6 +286,19 @@ indexer_definition = {
     },
     "fieldMappings": [
         {"sourceFieldName": "metadata_storage_path", "targetFieldName": "title"}
+        # Add mapping for language if you added the field to the index and want the raw detected code stored
+        # Note: The projection already maps /document/languageCode to the index field "language_code"
+        # So, no explicit fieldMapping is needed here *if* the indexProjection handles it.
     ],
-    "outputFieldMappings": [],
+    "outputFieldMappings": [
+        # Maps outputs from the enrichment tree directly to index fields *if not handled by indexProjections*
+        # We added language_code to index projections, so it's handled there.
+        # If you wanted image_text or caption directly in the index (not just per chunk via projection),
+        # you might add mappings here, but context needs careful consideration.
+        # Example (if NOT using projection for caption):
+        # {
+        #    "sourceFieldName": "/document/normalized_images/*/caption", # Might need aggregation/selection logic
+        #    "targetFieldName": "caption"
+        # }
+    ],
 }
