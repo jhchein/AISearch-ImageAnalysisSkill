@@ -12,12 +12,7 @@ from azure.identity import ManagedIdentityCredential
 app = func.FunctionApp()
 
 AI_VISION_ENDPOINT = os.getenv("AI_VISION_ENDPOINT")
-# It's generally better practice to get the credential inside the function
-# if the function app runs for a long time, to ensure token freshness.
-# However, for simplicity here, keeping it outside is okay for now.
-# Consider moving credential = ManagedIdentityCredential() inside if needed.
-credential = ManagedIdentityCredential()
-logging.info("Using Managed Identity for authentication.")
+
 
 # --- Client Initialization ---
 # Initialize outside the main function handler for potential reuse if the environment supports it,
@@ -30,11 +25,14 @@ client_initialized = False
 def get_ai_vision_client():
     """Helper to initialize or get the existing client."""
     global ai_vision_client, client_initialized
+
     if not client_initialized:
         try:
             logging.info(
                 f"Attempting to initialize AI Vision client with endpoint: {AI_VISION_ENDPOINT}"
             )
+            credential = ManagedIdentityCredential()
+            logging.info("Using Managed Identity for authentication.")
             if not AI_VISION_ENDPOINT:
                 raise ValueError("AI_VISION_ENDPOINT environment variable is not set.")
             ai_vision_client = ImageAnalysisClient(
