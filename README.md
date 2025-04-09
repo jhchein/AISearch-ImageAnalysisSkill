@@ -13,11 +13,13 @@ The project demonstrates how to:
 ## Key Components
 
 - **Azure Function App** (`src/function`):
+
   - Handles HTTP requests from the Azure AI Search indexer.
   - Uses Managed Identity to authenticate with Azure AI Vision services.
   - Processes images to extract text (`image_text`) and captions (`caption`).
 
 - **Custom Web Skill Definition** (`definitions.py`):
+
   - Configures the skillset to include the Custom Web Skill.
   - Specifies inputs (image data) and outputs (extracted text and captions).
 
@@ -54,7 +56,7 @@ cd customwebskill
 
 - Navigate to `src/function`.
 - Deploy the Function App to Azure (e.g., using Azure Functions Core Tools or VS Code).
-- Ensure the Function App's Managed Identity has the `AI Developer` role on your Azure AI Vision resource.
+- Ensure the Function App's Managed Identity has the `Cognitive Services User` role on your Azure AI Vision resource.
 - Update `FUNCTION_ENDPOINT` in your `.env` file after deployment.
 
 4. **Configure Managed Identity Authentication**
@@ -143,9 +145,11 @@ Follow these steps to configure Azure AI Search to authenticate securely with yo
 ## Notes
 
 - **Authentication:**
+
   - The Azure Function App uses its **system-assigned Managed Identity** to authenticate with Azure AI Vision services.
 
 - **Environment Variables:**
+
   - Ensure all required variables are set in your `.env` file and Azure Function App settings.
 
 - **Data Source:**
@@ -154,6 +158,7 @@ Follow these steps to configure Azure AI Search to authenticate securely with yo
 ## Additional Information
 
 - **Testing the Azure Function App:**
+
   - A test script is available in `src/test/function/call_function.py` to validate the Azure Function App independently.
 
 - **Managing the Indexer:**
@@ -170,6 +175,7 @@ Follow these steps to configure Azure AI Search to authenticate securely with yo
 ## Additional Information
 
 - **Testing the Azure Function App:**
+
   - A test script is available in `src/test/function/call_function.py` to validate the Azure Function App independently.
 
 - **Secure App Authentication:**
