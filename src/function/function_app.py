@@ -13,11 +13,6 @@ app = func.FunctionApp()
 
 AI_VISION_ENDPOINT = os.getenv("AI_VISION_ENDPOINT")
 
-
-# --- Client Initialization ---
-# Initialize outside the main function handler for potential reuse if the environment supports it,
-# but handle potential initialization errors within the request. Or initialize inside the handler (safer).
-# Let's initialize inside the handler for safer credential handling per invocation.
 ai_vision_client = None
 client_initialized = False
 
@@ -43,8 +38,8 @@ def get_ai_vision_client():
             logging.info("AI Vision client initialized successfully.")
         except Exception as e:
             logging.error(f"Failed to initialize AI Vision client: {e}", exc_info=True)
-            ai_vision_client = None  # Ensure client is None if init fails
-            client_initialized = False  # Explicitly mark as not initialized
+            ai_vision_client = None
+            client_initialized = False
     return ai_vision_client
 
 
@@ -71,7 +66,6 @@ def aivisionapiv4(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
         )
 
-    # --- Get parameters from the request URL ---
     use_caption = req.params.get("use_caption", "false").lower() == "true"
     default_language = req.params.get("default_language", "en")
     logging.info(f"Caption processing requested: {use_caption}")
@@ -79,39 +73,61 @@ def aivisionapiv4(req: func.HttpRequest) -> func.HttpResponse:
 
     response_values = []
 
-    for record in req_body.get("values", []):
+    values_data = req_body.get("values", [])
+
+    for record in values_data:
+
         record_id = record.get("recordId")
         record_data = {}
         record_errors = []
         record_warnings = []
 
-        logging.debug(f"Processing record ID: {record_id}")
+        logging.info(f"Processing record ID: {record_id}")
 
-        # --- Get record-specific inputs ---
-        record_input_data = record.get("data", {})
-        image_base64 = record_input_data.get("image")
-        # Get language for this specific record, fall back to default
-        language_code = record_input_data.get("languageCode", default_language)
-        # Basic validation: ensure it's a non-empty string, fallback if not
-        if not isinstance(language_code, str) or not language_code.strip():
-            logging.warning(
-                f"Invalid or missing languageCode for record {record_id}, using default '{default_language}'."
-            )
-            language_code = default_language
+        record_input_data_raw = record.get("data", {})
+
+        if isinstance(record_input_data_raw, dict):
+            record_input_data = record_input_data_raw
         else:
-            # Normalize (optional, e.g., to lower case)
-            language_code = language_code.strip().lower()
+            logging.error(
+                f"Invalid type for 'data' field in record ID {record_id}. Expected object/dict, got {type(record_input_data_raw).__name__}. Skipping image processing for this record."
+            )
+            record_errors.append(
+                {"message": "Invalid format for 'data' field. Expected an object."}
+            )
+            record_input_data = {}
+            image_base64 = None
+
+        if isinstance(record_input_data_raw, dict):
+            image_base64 = record_input_data.get("image")
+            language_code = record_input_data.get("languageCode", default_language)
+            if not isinstance(language_code, str) or not language_code.strip():
+                logging.warning(
+                    f"Invalid or missing languageCode for record {record_id}, using default '{default_language}'."
+                )
+                language_code = default_language
+            else:
+                language_code = language_code.strip().lower()
+        else:
+            language_code = default_language
 
         logging.info(f"Using language '{language_code}' for record ID: {record_id}")
 
         if not image_base64:
-            error_msg = f"No image data provided for record ID: {record_id}."
-            logging.error(error_msg)
-            record_errors.append({"message": error_msg})
+            if not any(
+                err["message"] == "Invalid format for 'data' field. Expected an object."
+                for err in record_errors
+            ):
+                error_msg = f"No image data provided or 'data' field was invalid for record ID: {record_id}."
+                logging.error(error_msg)
+                record_errors.append(
+                    {"message": "Missing or invalid image data input."}
+                )
+
             response_values.append(
                 {
                     "recordId": record_id,
-                    "data": record_data,
+                    "data": {},
                     "errors": record_errors,
                     "warnings": record_warnings,
                 }
@@ -127,14 +143,12 @@ def aivisionapiv4(req: func.HttpRequest) -> func.HttpResponse:
             if use_caption:
                 visual_features.append(VisualFeatures.CAPTION)
 
-            # --- Use the determined language_code ---
             result = client.analyze(
                 image_data=image_bytes,
                 visual_features=visual_features,
-                language=language_code,  # Use the variable here
+                language=language_code,
             )
 
-            # (Rest of the result processing logic remains the same...)
             if result.read and result.read.blocks:
                 document_contents = [
                     line.text for block in result.read.blocks for line in block.lines
@@ -184,7 +198,9 @@ def aivisionapiv4(req: func.HttpRequest) -> func.HttpResponse:
             else:
                 error_msg = f"Azure SDK Error processing record ID {record_id}: {e}"
                 logging.error(error_msg, exc_info=True)
-                record_errors.append({"message": "An Azure service error occurred."})
+                record_errors.append(
+                    {"message": f"An Azure service error occurred. Details: {str(e)}"}
+                )
 
             response_values.append(
                 {
@@ -198,7 +214,9 @@ def aivisionapiv4(req: func.HttpRequest) -> func.HttpResponse:
         except Exception as e:
             error_msg = f"Unexpected error processing record ID {record_id}: {e}"
             logging.error(error_msg, exc_info=True)
-            record_errors.append({"message": "An unexpected error occurred."})
+            record_errors.append(
+                {"message": f"An unexpected error occurred. Details: {str(e)}"}
+            )
             response_values.append(
                 {
                     "recordId": record_id,
